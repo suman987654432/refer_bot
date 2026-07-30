@@ -14,7 +14,10 @@ const checkEligibility = async (user, reward) => {
     return { eligible: false, reason: `Requires ${reward.requiredRefs} referrals. You have ${user.referrals}.` };
   }
 
-  // Removed single-claim restriction to allow multiple purchases.
+  // Limit users to a maximum of 2 redemptions
+  if (user.claimedRewards && user.claimedRewards.length >= 2) {
+    return { eligible: false, reason: 'You have reached the maximum limit of 2 redemptions.' };
+  }
 
   // Check if there is a pending claim request
   const pendingClaim = await Claim.findOne({
