@@ -14,9 +14,15 @@ const checkEligibility = async (user, reward) => {
     return { eligible: false, reason: `Requires ${reward.requiredRefs} referrals. You have ${user.referrals}.` };
   }
 
-  // Limit users to a maximum of 2 redemptions
-  if (user.claimedRewards && user.claimedRewards.length >= 2) {
-    return { eligible: false, reason: 'You have reached the maximum limit of 2 redemptions.' };
+  // 5-minute cooldown between redemptions
+  const lastClaim = await Claim.findOne({ userId: user._id }).sort({ claimedAt: -1 });
+  if (lastClaim) {
+    const timeSinceLastClaim = Date.now() - new Date(lastClaim.claimedAt).getTime();
+    const cooldownMs = 5 * 60 * 1000; // 5 minutes
+    if (timeSinceLastClaim < cooldownMs) {
+      const remainingMinutes = Math.ceil((cooldownMs - timeSinceLastClaim) / (60 * 1000));
+      return { eligible: false, reason: `Please wait ${remainingMinutes} minute(s) before redeeming again.` };
+    }
   }
 
   // Check if there is a pending claim request
