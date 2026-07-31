@@ -170,11 +170,11 @@ router.post('/api/verify', async (req, res) => {
 
     // 4. Double IP and Fingerprint verification check (if enabled)
     if (settings.deviceVerify && !isLocalIp) {
-      // Check IP uniqueness
+      // Check IP uniqueness (Disabled blocking because mobile carriers in India use shared IPs / CGNAT)
       const duplicateIpUser = await User.findOne({ ipAddress: ip, verified: true });
       if (duplicateIpUser && duplicateIpUser.telegramId !== userId) {
-        logger.warn(`⚠️ IP Verification Blocked: User ${userId} tried to verify using IP ${ip} which is already registered to user ${duplicateIpUser.telegramId}`);
-        return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
+        logger.warn(`⚠️ Shared IP Detected: User ${userId} is using IP ${ip} which is also used by ${duplicateIpUser.telegramId}. (Blocking bypassed)`);
+        // return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
       }
 
       // Check Fingerprint uniqueness
