@@ -181,8 +181,12 @@ router.post('/api/verify', async (req, res) => {
       if (fingerprint) {
         const duplicateFingerprintUser = await User.findOne({ deviceFingerprint: fingerprint, verified: true });
         if (duplicateFingerprintUser && duplicateFingerprintUser.telegramId !== userId) {
-          logger.warn(`⚠️ Fingerprint Verification Blocked: User ${userId} tried to verify using device fingerprint ${fingerprint} which is already registered to user ${duplicateFingerprintUser.telegramId}`);
-          return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
+          if (fingerprint.startsWith('fb_')) {
+            logger.warn(`⚠️ Fallback Fingerprint Collision: User ${userId} shares fallback fingerprint ${fingerprint} with ${duplicateFingerprintUser.telegramId}. (Blocking bypassed)`);
+          } else {
+            logger.warn(`⚠️ Fingerprint Verification Blocked: User ${userId} tried to verify using device fingerprint ${fingerprint} which is already registered to user ${duplicateFingerprintUser.telegramId}`);
+            return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
+          }
         }
       }
 
