@@ -88,7 +88,7 @@ router.post('/api/verify', async (req, res) => {
     // 0. Strict Anti-Modded Client Check (The Turbotel/Script Killer)
     if (deviceSpecs && tgPlatform) {
       const ua = (deviceSpecs.userAgent || '').toLowerCase();
-      
+
       // Block known modded names
       if (ua.includes('turbotel') || ua.includes('plusmessenger') || ua.includes('bgram') || ua.includes('headless') || ua.includes('puppeteer')) {
         logger.warn(`⚠️ Modded Client Blocked: User ${userId} used forbidden app in UserAgent.`);
@@ -100,7 +100,7 @@ router.post('/api/verify', async (req, res) => {
         logger.warn(`⚠️ Unofficial Client Blocked: User ${userId} claimed android but missing Telegram-Android in UserAgent.`);
         return res.status(400).json({ error: 'Verification blocked: Please use the OFFICIAL Telegram Android app.' });
       }
-      
+
       if (tgPlatform === 'ios' && !ua.includes('telegram-ios')) {
         logger.warn(`⚠️ Unofficial Client Blocked: User ${userId} claimed ios but missing Telegram-iOS in UserAgent.`);
         return res.status(400).json({ error: 'Verification blocked: Please use the OFFICIAL Telegram iOS app.' });
@@ -184,8 +184,8 @@ router.post('/api/verify', async (req, res) => {
           if (fingerprint.startsWith('fb_')) {
             logger.warn(`⚠️ Fallback Fingerprint Collision: User ${userId} shares fallback fingerprint ${fingerprint} with ${duplicateFingerprintUser.telegramId}. (Blocking bypassed)`);
           } else {
-            logger.warn(`⚠️ Fingerprint Verification Blocked: User ${userId} tried to verify using device fingerprint ${fingerprint} which is already registered to user ${duplicateFingerprintUser.telegramId}`);
-            return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
+            logger.warn(`⚠️ Fingerprint Verification Collision: User ${userId} tried to verify using device fingerprint ${fingerprint} which is already registered to user ${duplicateFingerprintUser.telegramId}. (Blocking bypassed due to Telegram webview identical hashes)`);
+            // return res.status(400).json({ error: 'Device already verified: This device has already been used to verify a Telegram account.' });
           }
         }
       }
