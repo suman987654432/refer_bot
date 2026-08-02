@@ -190,7 +190,7 @@ router.post('/api/verify', async (req, res) => {
         }
       }
 
-      // Check LocalStorage Device Token uniqueness
+      // Check LocalStorage Device Token uniquenessjj
       if (deviceToken) {
         const duplicateTokenUser = await User.findOne({ deviceToken: deviceToken, verified: true });
         if (duplicateTokenUser && duplicateTokenUser.telegramId !== userId) {
