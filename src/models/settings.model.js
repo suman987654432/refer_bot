@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const settingsSchema = new mongoose.Schema({
   supportUsername: {
     type: String,
-    default: '@piyushpathak7',
+    default: '@Shein_supportbot',
     trim: true,
   },
   dailyClaimLimit: {

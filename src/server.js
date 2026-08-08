@@ -48,7 +48,7 @@ async function seedDatabase() {
     const settingsCount = await Settings.countDocuments({});
     if (settingsCount === 0) {
       const defaultSettings = new Settings({
-        supportUsername: '@piyushpathak7',
+        supportUsername: '@Shein_supportbot',
         dailyClaimLimit: 5,
         botStatus: true,
         deviceVerify: true,
