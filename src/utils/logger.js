@@ -23,15 +23,18 @@ const logger = winston.createLogger({
   ],
 });
 
-// If in development mode, log to console with simple format
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      logFormat
-    ),
-  }));
-}
+// Always log to console so cloud hosting providers (Render, Railway, etc.) can capture stdout/stderr
+logger.add(new winston.transports.Console({
+  format: process.env.NODE_ENV === 'production'
+    ? winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+      )
+    : winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        logFormat
+      ),
+}));
 
 module.exports = logger;
