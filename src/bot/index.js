@@ -31,7 +31,7 @@ if (config.NODE_ENV === 'production' && config.WEBHOOK_URL) {
 
 // Global Message router
 bot.on('message', async (msg) => {
-  if (!msg.text || !msg.from) return;
+  if ((!msg.text && !msg.document) || !msg.from) return;
 
   const telegramId = String(msg.from.id);
 
@@ -41,7 +41,7 @@ bot.on('message', async (msg) => {
   }
 
   // Admin routing
-  if (msg.text.startsWith('/') && config.ADMIN_IDS.includes(telegramId)) {
+  if (msg.text && msg.text.startsWith('/') && config.ADMIN_IDS.includes(telegramId)) {
     const adminCmds = [
       '/admin',
       '/users',
