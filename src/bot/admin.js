@@ -722,7 +722,7 @@ const sendChannelsManagement = async (bot, chatId, messageId = null) => {
 };
 
 const handleAdminState = async (bot, msg, user) => {
-  const text = msg.text.trim();
+  const text = msg.text ? msg.text.trim() : '';
   const chatId = msg.chat.id;
 
   try {
@@ -785,8 +785,8 @@ const handleAdminState = async (bot, msg, user) => {
     }
 
     if (user.adminState === 'awaiting_reward_code') {
-      if (!text) {
-        return bot.sendMessage(chatId, '⚠️ *Invalid input:* Please enter at least one code:');
+      if (!text && !msg.document) {
+        return bot.sendMessage(chatId, '⚠️ *Invalid input:* Please enter at least one code or upload a file (.json or .txt):');
       }
 
       const { rewardId } = user.adminTempData;
@@ -799,9 +799,16 @@ const handleAdminState = async (bot, msg, user) => {
         return bot.sendMessage(chatId, '❌ *Error:* Reward not found. Resetting state.');
       }
 
-      const codesToAdd = text.split(/[\n,]+/).map(c => c.trim()).filter(c => c.length > 0);
+      let codesToAdd = [];
+
+      if (msg.document) {
+        codesToAdd = [`FILE:${msg.document.file_id}`];
+      } else {
+        codesToAdd = text.split(/[\n,]+/).map(c => c.trim()).filter(c => c.length > 0);
+      }
+
       if (codesToAdd.length === 0) {
-        return bot.sendMessage(chatId, '⚠️ *Invalid input:* Could not parse codes. Try again:');
+        return bot.sendMessage(chatId, '⚠️ *Invalid input:* Could not parse codes from message or file. Try again:');
       }
 
       reward.codes.push(...codesToAdd);

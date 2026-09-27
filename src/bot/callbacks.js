@@ -153,12 +153,18 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
         let approvalMsg = `🎉 *Claim Approved!*\n\n` +
                           `🎁 Your withdrawal request for *${reward.title}* has been processed instantly!\n`;
                           
-        if (givenCode) {
-          approvalMsg += `\n🔑 *Your Unique Code:* \`${givenCode}\`\n\n`;
+        if (givenCode && givenCode.startsWith('FILE:')) {
+          const fileId = givenCode.replace('FILE:', '');
+          approvalMsg += `\n📎 *Here is your requested file/document:*\n\n`;
+          approvalMsg += `ℹ️ Description: _${reward.description}_`;
+          bot.sendDocument(message.chat.id, fileId, { caption: approvalMsg, parse_mode: 'Markdown' }).catch(()=>{});
+        } else {
+          if (givenCode) {
+            approvalMsg += `\n🔑 *Your Unique Code:* \`${givenCode}\`\n\n`;
+          }
+          approvalMsg += `ℹ️ Description: _${reward.description}_`;
+          bot.sendMessage(message.chat.id, approvalMsg, { parse_mode: 'Markdown' }).catch(()=>{});
         }
-        
-        approvalMsg += `ℹ️ Description: _${reward.description}_`;
-        bot.sendMessage(message.chat.id, approvalMsg, { parse_mode: 'Markdown' }).catch(()=>{});
 
         // Refresh Withdraw Center UI
         const rewards = await Reward.find({ active: true }).sort({ requiredRefs: 1 });
@@ -232,7 +238,7 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
         user.adminState = 'awaiting_reward_code';
         user.adminTempData = { rewardId };
         await user.save();
-        return bot.sendMessage(message.chat.id, '✍️ *Add Codes to Reward*\n\nEnter the code(s) you want to add to this reward.\nTo add multiple codes at once, separate them with a comma (e.g., `CODE1, CODE2, CODE3`):', { parse_mode: 'Markdown' });
+        return bot.sendMessage(message.chat.id, '✍️ *Add Codes to Reward*\n\nEnter the code(s) or upload a JSON/TXT file to add to this reward.\nTo add manually, separate codes with a comma (e.g., `CODE1, CODE2, CODE3`):', { parse_mode: 'Markdown' });
       }
 
       // Start Withdraw Codes Wizard
