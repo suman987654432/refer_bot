@@ -158,6 +158,26 @@ const handleCallbackQuery = async (bot, callbackQuery) => {
           approvalMsg += `\n📎 *Here is your requested file/document:*\n\n`;
           approvalMsg += `ℹ️ Description: _${reward.description}_`;
           bot.sendDocument(message.chat.id, fileId, { caption: approvalMsg, parse_mode: 'Markdown' }).catch(()=>{});
+        } else if (givenCode && givenCode.startsWith('TXT_LINE:')) {
+          const lineContent = givenCode.replace('TXT_LINE:', '');
+          approvalMsg += `\n📎 *Here is your requested file/document:*\n\n`;
+          approvalMsg += `ℹ️ Description: _${reward.description}_`;
+          
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const scratchDir = path.join(__dirname, '../../scratch');
+            if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+            
+            const filePath = path.join(scratchDir, `reward_${Date.now()}.txt`);
+            fs.writeFileSync(filePath, lineContent, 'utf-8');
+            
+            bot.sendDocument(message.chat.id, filePath, { caption: approvalMsg, parse_mode: 'Markdown' }).then(() => {
+              fs.unlinkSync(filePath);
+            }).catch(()=>{});
+          } catch (err) {
+            logger.error(`Error sending TXT_LINE document: ${err.message}`);
+          }
         } else {
           if (givenCode) {
             approvalMsg += `\n🔑 *Your Unique Code:* \`${givenCode}\`\n\n`;

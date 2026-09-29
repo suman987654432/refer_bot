@@ -802,7 +802,22 @@ const handleAdminState = async (bot, msg, user) => {
       let codesToAdd = [];
 
       if (msg.document) {
-        codesToAdd = [`FILE:${msg.document.file_id}`];
+        try {
+          await bot.sendMessage(chatId, '⚙️ Processing file, please wait...');
+          const downloadDir = path.join(__dirname, '../../scratch');
+          if (!fs.existsSync(downloadDir)) {
+            fs.mkdirSync(downloadDir, { recursive: true });
+          }
+          const filePath = await bot.downloadFile(msg.document.file_id, downloadDir);
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          fs.unlinkSync(filePath);
+
+          const lines = fileContent.split(/[\n\r]+/).map(c => c.trim()).filter(c => c.length > 0);
+          codesToAdd = lines.map(line => `TXT_LINE:${line}`);
+        } catch (err) {
+          logger.error(`File parsing error: ${err.message}`);
+          return bot.sendMessage(chatId, '❌ *Error:* Failed to download or parse the file.');
+        }
       } else {
         codesToAdd = text.split(/[\n,]+/).map(c => c.trim()).filter(c => c.length > 0);
       }
@@ -856,8 +871,9 @@ const handleAdminState = async (bot, msg, user) => {
       await user.save();
 
       // Format withdrawn codes to show to admin
-      const textCodes = withdrawnCodes.filter(c => !c.startsWith('FILE:'));
+      const textCodes = withdrawnCodes.filter(c => !c.startsWith('FILE:') && !c.startsWith('TXT_LINE:'));
       const fileCodes = withdrawnCodes.filter(c => c.startsWith('FILE:'));
+      const txtLineCodes = withdrawnCodes.filter(c => c.startsWith('TXT_LINE:'));
 
       let preview = 'None';
       if (textCodes.length > 0) {
@@ -865,13 +881,13 @@ const handleAdminState = async (bot, msg, user) => {
         if (textCodes.length > 10) {
           preview += ` ... and ${textCodes.length - 10} more.`;
         }
-      } else if (fileCodes.length > 0) {
-        preview = `${fileCodes.length} document(s) sent below.`;
+      } else if (fileCodes.length > 0 || txtLineCodes.length > 0) {
+        preview = `${fileCodes.length + (txtLineCodes.length > 0 ? 1 : 0)} document(s) sent below.`;
       }
 
       await bot.sendMessage(chatId, `✅ *Successfully Withdrawn ${amount} Codes!*\n\n• Reward: *${reward.title}*\n• Remaining Stock: *${reward.codes.length}*\n\n*Withdrawn Codes:*\n\`${preview}\``, { parse_mode: 'Markdown' });
 
-      // Send each file document
+      // Send each old FILE document
       for (const fileCode of fileCodes) {
         const fileId = fileCode.replace('FILE:', '');
         try {
@@ -879,6 +895,24 @@ const handleAdminState = async (bot, msg, user) => {
         } catch (err) {
           logger.error(`Failed to send withdrawn document: ${err.message}`);
           await bot.sendMessage(chatId, `❌ Failed to send document with ID: ${fileId}`);
+        }
+      }
+
+      // Bundle TXT_LINE codes into a single file and send it
+      if (txtLineCodes.length > 0) {
+        try {
+          const scratchDir = path.join(__dirname, '../../scratch');
+          if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+          const bundlePath = path.join(scratchDir, `withdrawn_codes_${Date.now()}.txt`);
+          
+          const bundleContent = txtLineCodes.map(c => c.replace('TXT_LINE:', '')).join('\n');
+          fs.writeFileSync(bundlePath, bundleContent, 'utf-8');
+
+          await bot.sendDocument(chatId, bundlePath, { caption: `📁 Withdrawn ${txtLineCodes.length} codes` });
+          fs.unlinkSync(bundlePath);
+        } catch (err) {
+          logger.error(`Failed to send txt_line bundle: ${err.message}`);
+          await bot.sendMessage(chatId, `❌ Failed to send bundled text codes.`);
         }
       }
 
