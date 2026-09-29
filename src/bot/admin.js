@@ -855,13 +855,32 @@ const handleAdminState = async (bot, msg, user) => {
       user.markModified('adminTempData');
       await user.save();
 
-      // Format withdrawn codes to show to admin (if too many, maybe don't show all or just send as document, but here we just show count or preview)
-      let preview = withdrawnCodes.slice(0, 10).join(', ');
-      if (withdrawnCodes.length > 10) {
-        preview += ` ... and ${withdrawnCodes.length - 10} more.`;
+      // Format withdrawn codes to show to admin
+      const textCodes = withdrawnCodes.filter(c => !c.startsWith('FILE:'));
+      const fileCodes = withdrawnCodes.filter(c => c.startsWith('FILE:'));
+
+      let preview = 'None';
+      if (textCodes.length > 0) {
+        preview = textCodes.slice(0, 10).join(', ');
+        if (textCodes.length > 10) {
+          preview += ` ... and ${textCodes.length - 10} more.`;
+        }
+      } else if (fileCodes.length > 0) {
+        preview = `${fileCodes.length} document(s) sent below.`;
       }
 
       await bot.sendMessage(chatId, `✅ *Successfully Withdrawn ${amount} Codes!*\n\n• Reward: *${reward.title}*\n• Remaining Stock: *${reward.codes.length}*\n\n*Withdrawn Codes:*\n\`${preview}\``, { parse_mode: 'Markdown' });
+
+      // Send each file document
+      for (const fileCode of fileCodes) {
+        const fileId = fileCode.replace('FILE:', '');
+        try {
+          await bot.sendDocument(chatId, fileId);
+        } catch (err) {
+          logger.error(`Failed to send withdrawn document: ${err.message}`);
+          await bot.sendMessage(chatId, `❌ Failed to send document with ID: ${fileId}`);
+        }
+      }
 
       return sendAdminDashboard(bot, chatId);
     }
